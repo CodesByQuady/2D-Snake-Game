@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<head>
+<title>Snake Game</title>
+</head>
+<body>
+<div>
+<canvas id='snakeboard'height=450 width=450></canvas>
+<button id='button'onclick="resetGame()">Press to Reset The Game</button>
+<h1>See How Long You Can Last</h1>
+</div>
+<div id="score">0</div>
+
+<style>
+#snakeboard {
+	border : 5px solid black;
+	position : absolute;
+	top : 50%;
+	left : 50%;
+	transform : translate(-50%, -50%);
+}
+#score {
+	position : absolute;
+	left : 50%;
+	top : 10%;
+	font-size: 50px;
+	color : black;
+	
+}
+#button {
+	position : absolute;
+	left : 35%;
+	top : 90%;
+	border: solid;
+	color: black;
+	padding: 15px 32px;
+	text-align: center;
+	font-size: 16px;
+}
+body {
+	background-color : lightgrey;
+}
+h1 { 
+	text-align : center;
+	padding : 15px 32px;
+	
+}
+
+
+</style>
+</body>
+<script>
+// Resources used to create this game https://www.educative.io/blog/javascript-snake-game-tutorial
+// Music and SFX
+var mySound;
+var myMusic;
+function sound(src){
+	this.sound = document.createElement('audio');
+	this.sound.src = src;
+	this.sound.setAttribute('preload','auto');
+	this.sound.setAttribute('controls','none');
+	this.sound.style.display = 'none';
+	document.body.appendChild(this.sound);
+	this.play = function(){
+		this.sound.play();
+	}
+	this.stop = function(){
+		this.sound.pause();
+	}
+}
+function music(src){
+	this.sound = document.createElement('audio');
+	this.sound.src = src;
+	this.sound.setAttribute('preload','auto');
+	this.sound.setAttribute('controls','none');
+	this.sound.style.display = 'none';
+	document.body.appendChild(this.sound);
+	this.play = function(){
+		this.sound.play();
+	}
+	this.stop = function(){
+		this.sound.pause();
+	}
+}
+// These lines of code will set the colors of both the snake and the background of the canvas
+const boardBorder = 'black';
+const boardBackground = 'lightblue';
+const snakeColor = 'green';
+const snakeBorder = 'darkgreen';
+//Creation of the snake and the starting location.
+let snake = [
+	{x: 200, y : 200},
+	{x: 190, y : 200},
+	{x: 180, y : 200},
+	{x: 170, y : 200},
+	{x: 160, y : 200}
+]
+let score = 0;
+let changingDirection = false;
+// Horizontal and Vertical Movement
+let foodX;
+let foodY;
+let dx = 10;
+let dy = 0;
+
+// Canvas element
+const snakeboard = document.getElementById('snakeboard');
+const snakeCTX = snakeboard.getContext('2d');
+
+
+document.addEventListener('keydown',changeDirection);
+
+function main(){
+	mySound = new sound('Eat Munch.mp3'); // Food Gets Eaten
+	myMusic = new music('Secret Level.mp3'); // Background Music 
+	if(gameOver()) return;
+	changingDirection = false;
+	setTimeout(function onTick(){
+		clearCanvas();
+		drawFood();
+		drawSnake();
+		moveSnake();
+		drawSnake();
+		main();
+	},100)
+}
+
+// Function to draw the canvas and its border.
+
+function clearCanvas(){
+	snakeCTX.fillStyle = boardBackground;
+	snakeCTX.strokeStyle = boardBorder;
+	snakeCTX.fillRect(0,0,snakeboard.width, snakeboard.height);
+	snakeCTX.strokeRect(0,0,snakeboard.width, snakeboard.height);
+}
+// Snake being drawn on the canvas
+function drawSnake(){
+	snake.forEach(drawSnakePart)
+}
+//Moving the snake
+function moveSnake(){
+	const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+	//Head will grow once food is eaten.
+	
+	snake.unshift(head);
+	const eatenFood = snake[0].x === foodX && snake[0].y === foodY;
+	if(eatenFood){
+		score += 10;
+		document.getElementById('score').innerHTML = score;
+		mySound.play();
+		genFood();
+		
+	}else {
+		snake.pop();
+	}
+}
+
+
+
+// Drawing the snake part by part.
+function drawSnakePart(snakePart){
+	snakeCTX.fillStyle = snakeColor;
+	snakeCTX.strokeStyle = snakeBorder;
+	snakeCTX.fillRect(snakePart.x,snakePart.y,10,10);
+	snakeCTX.strokeRect(snakePart.x,snakePart.y,10,10);
+}
+// Function that allows for movement
+function changeDirection(event){
+	const LEFT_KEY = 37;
+	const UP_KEY = 38;
+	const RIGHT_KEY = 39;
+	const DOWN_KEY = 40;
+	// Denies reversal
+	if(changingDirection) return;
+	changingDirection = true;
+	
+	const kP = event.keyCode;
+	const goUp = dy === -10;
+	const goDown = dy === 10;
+	const goRight = dx === 10;
+	const goLeft = dx === -10;
+	if(kP === LEFT_KEY && !goRight){
+		dx = -10;
+		dy = 0;
+	}
+	if(kP === UP_KEY && !goDown){
+		dx = 0;
+		dy = -10;
+	}
+	if(kP === RIGHT_KEY && !goLeft){
+		dx = 10;
+		dy = 0;
+	}
+	if(kP === DOWN_KEY && !goUp){
+		dx = 0;
+		dy = 10;
+	}
+}
+// The end game function/hit detection.
+function gameOver(){
+	for(let i = 4; i < snake.length; i++){
+		if(snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true
+		
+	}
+	const hitLeft = snake[0].x < 0;
+	const hitRight = snake[0].x > snakeboard.width - 10;
+	const hitTop = snake[0].y < 0;
+	const hitBottom = snake[0].y > snakeboard.height - 10;
+	return hitLeft || hitRight || hitTop || hitBottom
+	
+}
+// This function will allow the food to be created in random x,y coordinates.
+function randomFood(min,max){
+	return Math.round((Math.random() * (max-min) + min) / 10) * 10;
+}
+function genFood(){
+	foodX = randomFood(0,snakeboard.width - 10);
+	foodY = randomFood(0, snakeboard.height - 10);
+	snake.forEach(function snakeEat(part){
+		const foodAte = part.x == foodX && part.y == food.y;
+		if(foodAte)genFood();
+	});
+}
+// Food gets drawn to canvas
+function drawFood(){
+	snakeCTX.fillStyle = 'red';
+	snakeCTX.strokeStyle = 'red';
+	snakeCTX.fillRect(foodX,foodY,10,10);
+	snakeCTX.strokeRect(foodX,foodY,10,10);
+}
+// Function to reset the game which will be pressed by the button.
+function resetGame(){
+	document.location.href = "";
+}
+// Function to start the game.
+main();
+genFood();
+
+</script>
+</html>
